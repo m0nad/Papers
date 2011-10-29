@@ -1,0 +1,113 @@
+﻿---notas em códigos 'auto-replicáveis', por m0nad---
+código do ken thompson , auto replicável:
+http://www.azillionmonkeys.com/qed/self3_c.txt
+
+-------------------------
+m0nad@m0nad-notebook:~/projects/selfreplica$ gcc -o selfreplica selfreplica.c
+selfreplica.c: In function ‘main’:
+selfreplica.c:26: warning: incompatible implicit declaration of built-in function ‘printf’
+m0nad@m0nad-notebook:~/projects/selfreplica$ ./selfreplica
+char s[] = {
+0x6D, 0x61, 0x69, 0x6E, 0x28, 0x29, 0x20, 0x7B,
+0x0D, 0x0A, 0x69, 0x6E, 0x74, 0x20, 0x69, 0x3B,
+0x0D, 0x0A, 0x09, 0x70, 0x72, 0x69, 0x6E, 0x74,
+0x66, 0x28, 0x22, 0x63, 0x68, 0x61, 0x72, 0x20,
+0x73, 0x5B, 0x5D, 0x20, 0x3D, 0x20, 0x7B, 0x22,
+0x29, 0x3B, 0x0D, 0x0A, 0x09, 0x66, 0x6F, 0x72,
+0x28, 0x69, 0x3D, 0x30, 0x3B, 0x73, 0x5B, 0x69,
+0x5D, 0x21, 0x3D, 0x27, 0x5C, 0x30, 0x27, 0x3B,
+0x69, 0x2B, 0x2B, 0x29, 0x20, 0x7B, 0x0D, 0x0A,
+0x09, 0x09, 0x69, 0x66, 0x28, 0x20, 0x28, 0x69,
+0x26, 0x37, 0x29, 0x3D, 0x3D, 0x30, 0x20, 0x29,
+0x20, 0x70, 0x72, 0x69, 0x6E, 0x74, 0x66, 0x28,
+0x22, 0x5C, 0x6E, 0x22, 0x29, 0x3B, 0x0D, 0x0A,
+0x09, 0x09, 0x70, 0x72, 0x69, 0x6E, 0x74, 0x66,
+0x28, 0x22, 0x30, 0x78, 0x25, 0x30, 0x32, 0x58,
+0x2C, 0x20, 0x22, 0x2C, 0x73, 0x5B, 0x69, 0x5D,
+0x29, 0x3B, 0x0D, 0x0A, 0x09, 0x7D, 0x0D, 0x0A,
+0x09, 0x70, 0x72, 0x69, 0x6E, 0x74, 0x66, 0x28,
+0x22, 0x30, 0x5C, 0x6E, 0x7D, 0x3B, 0x5C, 0x6E,
+0x25, 0x73, 0x5C, 0x6E, 0x22, 0x2C, 0x73, 0x29,
+0x3B, 0x0D, 0x0A, 0x7D, 0
+};
+main() {
+int i;
+    printf("char s[] = {");
+    for(i=0;s[i]!='\0';i++) {
+        if( (i&7)==0 ) printf("\n");
+        printf("0x%02X, ",s[i]);
+    }
+    printf("0\n};\n%s\n",s);
+}
+m0nad@m0nad-notebook:~/projects/selfreplica$
+-------------------------
+eu olhei e falei 'style', entendi o conceito mas implementei de outra forma, fiz um oneliner em perl, pra fazer um estilo 'shellcode' dos valores ascii. =p
+-------------------------
+m0nad@m0nad-notebook:~/projects/selfreplica$ cat > 1.c
+int main () { };                                                                                 
+^C
+m0nad@m0nad-notebook:~/projects/selfreplica$ cat 1.c | perl -ne '@a = split //, $_;printf "\\x%02x", unpack("C*", $_) foreach (@a)';echo
+\x69\x6e\x74\x20\x6d\x61\x69\x6e\x20\x28\x29\x20\x7b\x20\x7d\x3b\x0a
+m0nad@m0nad-notebook:~/projects/selfreplica$ 
+
+-------------------------
+ok, conferi se isso iria retornar oque eu queria
+-------------------------
+m0nad@m0nad-notebook:~/projects/selfreplica$ cat selfreplica-m0nad1.c
+char notevil[] = "\x69\x6e\x74\x20\x6d\x61\x69\x6e\x20\x28\x29\x20\x7b\x20\x7d\x3b\x0a";
+#include <stdio.h>
+int
+main ()
+{
+   printf ("%s", notevil);
+   return 0;
+}
+
+m0nad@m0nad-notebook:~/projects/selfreplica$ gcc -o selfreplica-m0nad1 selfreplica-m0nad1.c
+m0nad@m0nad-notebook:~/projects/selfreplica$ ./selfreplica-m0nad1
+int main () { };
+m0nad@m0nad-notebook:~/projects/selfreplica$
+-------------------------
+ieí!!
+ok, agora vou fazer um notevil do próprio código, mas tem um problema ai
+preciso imprimir o código em C e o do 'notevil', ok , relendo o código do ken thompson...
+-------------------------
+
+	for(i=0;s[i]!='\0';i++) {
+		if( (i&7)==0 ) printf("\n");
+		printf("0x%02X, ",s[i]);
+
+	}
+-------------------------
+ou seja, ele cria a formatação do próprio hexadecimal, enquanto o nao chega a o final, q eh um nullbyte , style neh?
+
+bem, fiz algo parecido, segue o código.
+-------------------------
+m0nad@m0nad-notebook:~/projects/selfreplica$ cat selfreplica-m0nad-final.c
+char notevil[] = "\x23\x69\x6e\x63\x6c\x75\x64\x65\x20\x3c\x73\x74\x64\x69\x6f\x2e\x68\x3e\x0a\x69\x6e\x74\x0a\x6d\x61\x69\x6e\x20\x28\x29\x0a\x7b\x0a\x20\x20\x69\x6e\x74\x20\x69\x20\x3d\x20\x30\x20\x3b\x0a\x20\x20\x70\x72\x69\x6e\x74\x66\x20\x28\x22\x63\x68\x61\x72\x20\x6e\x6f\x74\x65\x76\x69\x6c\x5b\x5d\x20\x3d\x20\x5c\x22\x22\x29\x3b\x0a\x20\x20\x77\x68\x69\x6c\x65\x20\x28\x6e\x6f\x74\x65\x76\x69\x6c\x5b\x69\x5d\x29\x20\x7b\x0a\x20\x20\x20\x20\x70\x72\x69\x6e\x74\x66\x20\x28\x22\x5c\x5c\x78\x25\x30\x32\x78\x22\x2c\x20\x6e\x6f\x74\x65\x76\x69\x6c\x5b\x69\x2b\x2b\x5d\x29\x3b\x0a\x20\x20\x7d\x0a\x20\x20\x70\x72\x69\x6e\x74\x66\x20\x28\x22\x5c\x22\x3b\x5c\x6e\x25\x73\x22\x2c\x20\x6e\x6f\x74\x65\x76\x69\x6c\x29\x3b\x0a\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x30\x3b\x0a\x7d\x0a";
+#include <stdio.h>
+int
+main ()
+{
+  int i = 0 ;
+  printf ("char notevil[] = \"");
+  while (notevil[i]) {
+    printf ("\\x%02x", notevil[i++]);
+  }
+  printf ("\";\n%s", notevil);
+  return 0;
+}
+-------------------------
+testando... :D
+-------------------------
+
+m0nad@m0nad-notebook:~/projects/selfreplica$ gcc -o selfreplica-m0nad-final selfreplica-m0nad-final.c
+m0nad@m0nad-notebook:~/projects/selfreplica$ ./selfreplica-m0nad-final >teste
+m0nad@m0nad-notebook:~/projects/selfreplica$ diff selfreplica-m0nad-final.c teste
+m0nad@m0nad-notebook:~/projects/selfreplica$ 
+
+-------------------------
+:D
+abraços galera.
+
+happy hacking !
