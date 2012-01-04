@@ -169,7 +169,7 @@ m0nad@m0nad-desktop:~$
 
 -------------------------------------
 
-      Bem, nesse código nao ah uma verificação para mudar o valor da variável 'admin' de '0', para algo diferente de zero, que validaria o nosso 'if', o único jeito, seria com um overflow, vamos ver.
+      Bem, nesse código não ah uma verificação para mudar o valor da variável 'admin' de '0', para algo diferente de zero, que validaria o nosso 'if', o único jeito, seria com um overflow, vamos ver.
 
 -------------------------------------
 
@@ -444,7 +444,7 @@ m0nad@m0nad-desktop:~$
 
 - Conclusão 
 
-      Buffer overflows são uma falha de segurança seria, que podem levar ao comprometimento da aplicação, travando-a, ou controlando seu fluxo, e dependendo do nivel de permissão da aplicação, pode-se levar ao comprometimento do sistema.
+      Buffer overflows são uma falha de segurança seria, que podem levar ao comprometimento da aplicação, travando-a, ou controlando seu fluxo, e dependendo do nível de permissão da aplicação pode-se levar ao comprometimento do sistema.
 
 
 
