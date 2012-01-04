@@ -65,15 +65,15 @@ Buffer Overflows para Iniciantes
 
 - Apresentação
   
-       Eu me chamo Victor Ramos Mello aka m0nad, tenho um github ( https://github.com/m0nad ) e meu email é m0nad /at/ email.com.
+      Eu me chamo Victor Ramos Mello aka m0nad, tenho um github (https://github.com/m0nad) e meu email é m0nad /at/ email.com.
 
-       Estou aqui para demonstrar o funcionamento de buffer overflows, esta técnica muito falada, mas pouco entendida, teremos aqui uma introdução ao tema.
+      Estou aqui para demonstrar o funcionamento de buffer overflows, esta técnica muito falada, mas pouco entendida, teremos aqui uma introdução ao tema.
 
 - Oque é Buffer Overflow?
 
-       Buffer overflow, traduzindo, seria transbordamento de memória, acontece quando se coloca mais dados do que a capacidade de um buffer. Isso acontece, pois o programador, não verifica a quantidade de dados que irão ser colocados dentro de uma determinada área de memória, este excesso de dados, pode levar ao corrompimento de outras áreas de memória adjacentes, levando ao programa a comportamentos inesperados, ou mesmo o travamento do programa.
+      Buffer overflow, traduzindo, seria transbordamento de memória, acontece quando se coloca mais dados do que a capacidade de um buffer. Isso acontece, pois o programador, não verifica a quantidade de dados que irão ser colocados dentro de uma determinada área de memória, este excesso de dados, pode levar ao corrompimento de outras áreas de memória adjacentes, levando ao programa a comportamentos inesperados, ou mesmo o travamento do programa.
 
-       Um atacante pode se utilizar disso para travar a aplicação propositalmente ou mesmo tomar o controle do fluxo do programa, possibilitando ganhar privilégios no sistema, no caso de uma aplicação remota, a possibilidade de se ganhar acesso ao sistema. 
+      Um atacante pode se utilizar disso para travar a aplicação propositalmente ou mesmo tomar o controle do fluxo do programa, possibilitando ganhar privilégios no sistema, no caso de uma aplicação remota, a possibilidade de se ganhar acesso ao sistema. 
 
 - Desabilitando Proteções
  
@@ -90,7 +90,7 @@ $ gcc vuln.c -o vuln -fno-stack-protector
 
 -------------------------------------
 
- E Para desabilitar o ASLR, basta digitar, como root:
+      E Para desabilitar o ASLR, basta digitar, como root:
 
 -------------------------------------
 
@@ -105,7 +105,7 @@ $ gcc vuln.c -o vuln -fno-stack-protector
 
       Um exemplo disso seria a função gets(), que não verifica quantos bytes serão colocados dento de um determinado buffer.
 
-Exemplo:
+      Exemplo:
 
 -------------------------------------
 
@@ -227,7 +227,7 @@ Arquivo depois : ��u���[]Ð�U��S��
 
 -------------------------------------
 
-     Vemos que de alguma forma afetamos o endereço para onde a variável ponteiro 'arquivo' estava apontando. Isso ocorre pois o buffer so tem a capacidade de armazenar 4 bytes, ou seja, no máximo 3 'A's e mais o nullbyte. Algo como:
+      Vemos que de alguma forma afetamos o endereço para onde a variável ponteiro 'arquivo' estava apontando. Isso ocorre pois o buffer só tem a capacidade de armazenar 4 bytes, ou seja, no máximo 3 'A's e mais o nullbyte. Algo como:
 
 -------------------------------------
 
@@ -405,7 +405,7 @@ Program received signal SIGSEGV, Segmentation fault.
 
 -------------------------------------
 
-    Vemos que recebemos um 'Segmentation fault'
+      Vemos que recebemos um 'Segmentation fault'
 
 -------------------------------------
 
@@ -414,11 +414,11 @@ Program received signal SIGSEGV, Segmentation fault.
 
 -------------------------------------
 
-    Pois sobrescrevemos o endereço de retorno, salvo na pilha, e este valor, é copiado para o contador de instrucões (instruction pointer[eip]), jogando o eip para '0x41414141' ou seja, o programa tenta pular pra esse endereço de memória, que nada mais são do que o valor em hexadecimal em ASCII do caractere 'A', como esta área de memória não possui um código valido ou permissão de execução, o programa 'crasha', agora você já sabe o porquê :).
+      Pois sobrescrevemos o endereço de retorno, salvo na pilha, e este valor, é copiado para o contador de instruções (instruction pointer[eip]), jogando o eip para '0x41414141' ou seja, o programa tenta pular pra esse endereço de memória, que nada mais são do que o valor em hexadecimal em ASCII do caractere 'A', como esta área de memória não possui um código valido ou permissão de execução, o programa 'crasha', agora você já sabe o porquê :).
 
-    Caso colocarmos o endereço da função 'hack' no exato lugar do de onde esta o '0x41414141', podemos executa-la!
+      Caso colocarmos o endereço da função 'hack' no exato lugar do de onde esta o '0x41414141', podemos executa-la!
 
-    Vamos tentar:
+      Vamos tentar:
 
 -------------------------------------
 
@@ -438,13 +438,13 @@ m0nad@m0nad-desktop:~$
  
 -------------------------------------
 
-    Sucesso! com isso podemos setar o nosso endereço de retorno para qualquer lugar que quizermos! E assim tomar o controle da aplicação!
+      Sucesso! com isso podemos setar o nosso endereço de retorno para qualquer lugar que quisermos! E assim tomar o controle da aplicação!
 
-    Poderiamos setar o endereço para um código valido, feito por nós, chamado de shellcode ou payload, ou para um endereço da libc, com a funcao system, e assim executar comandos na maquina, essa técnica é chamada de return to libc, ou seja, retornar para a libC, essa técnica eu descrevo em um artigo meu Retornando para libC (https://raw.github.com/m0nad/Papers/master/ret2libc.txt)
+      Poderíamos setar o endereço para um código valido, feito por nós, chamado de shellcode ou payload, ou para um endereço da libc, com a função system, e assim executar comandos na maquina, essa técnica é chamada de return to libc, ou seja, retornar para a libC, essa técnica eu descrevo em um artigo meu Retornando para libC (https://raw.github.com/m0nad/Papers/master/ret2libc.txt)
 
 - Conclusão 
 
-    Buffer overflows são uma falha de segurança seria, que podem levar ao comprometimento da aplicação, travando-a, ou controlando seu fluxo, e dependendo do nivel de permissão da aplicação, pode-se levar ao comprometimento do sistema.
+      Buffer overflows são uma falha de segurança seria, que podem levar ao comprometimento da aplicação, travando-a, ou controlando seu fluxo, e dependendo do nivel de permissão da aplicação, pode-se levar ao comprometimento do sistema.
 
 
 
