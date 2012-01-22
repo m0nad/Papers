@@ -2,9 +2,6 @@
 
 ---- Tema    : Retornando para LibC / Ret2libc 
 ---- Autor   : m0nad [at] email.com            
----- Data    : 22/1/2012                       
----- Versão  : 1.1                             
-
 
  --Índice
 
