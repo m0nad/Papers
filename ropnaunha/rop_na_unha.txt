@@ -440,5 +440,5 @@ r00t!
 [4] http://shell-storm.org/project/ROPgadget/
 [5] https://wiki.ubuntu.com/Security/Features
 [6] http://en.wikipedia.org/wiki/Stack-smashing_protection
-[7] http://github/m0nad/
+[7] https://github.com/m0nad/Papers/tree/master/ropnaunha/bin
 
