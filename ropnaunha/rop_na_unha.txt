@@ -40,8 +40,8 @@ m0nad@m0nad-notebook:~$
 
 ------------------------------------------------------------------------------------
 
-  As proteções do sistema operacional pode ser encontrada no wiki do ubuntu[5]
-Podemos ver que o ASLR está ativo.
+  As proteções do sistema operacional pode ser encontrada no wiki do ubuntu[5].
+  Podemos ver que o ASLR está ativo.
 
 ------------------------------------------------------------------------------------
 
@@ -183,7 +183,7 @@ m0nad@m0nad-notebook:~$
 ------------------------------------------------------------------------------------
 
   Temos! precisamos então, de um xor %eax,%eax por exemplo, para colocarmos um null-
-byte na pilha
+byte na pilha.
 
 ------------------------------------------------------------------------------------
 
@@ -248,12 +248,12 @@ m0nad@m0nad-notebook:~$
 
 ------------------------------------------------------------------------------------
 
-  Pronto, com esses gadgets é possível chamar um execve("/bin//sh", NULL, NULL)
+  Pronto, com esses gadgets é possível chamar um execve("/bin//sh", NULL, NULL).
 
 5) Exploit
 
   O exploit basta usar os gadgets encontrados, primeiro colocamos a string "/bin" em 
-eax
+eax.
 
 ------------------------------------------------------------------------------------
 
@@ -264,7 +264,7 @@ $p .= pack("I", 0x080aa9a7); # mov %edx,%eax | ret
 
 ------------------------------------------------------------------------------------
 
-  Depois jogamos a string para .data
+  Depois jogamos a string para .data.
 
 ------------------------------------------------------------------------------------
 
@@ -275,7 +275,7 @@ $p .= pack("I", 0x08080391); # mov %eax,(%edx) | ret
 
 ------------------------------------------------------------------------------------
 
-  Fazemos o mesmo para colocar "//sh" em .data + 4
+  Fazemos o mesmo para colocar "//sh" em .data + 4.
 
 ------------------------------------------------------------------------------------
 
@@ -304,7 +304,7 @@ $p .= pack("I", 0x08080391); # mov %eax,(%edx) | ret
 ------------------------------------------------------------------------------------
 
   Colocamos o endereço de data, ou seja da string /bin//sh em ebx, e ponteiro para 
-NULL que é .data + 8
+NULL que é .data + 8.
 
 ------------------------------------------------------------------------------------
 
@@ -422,7 +422,7 @@ r00t!
 
 6) Binário
 
-  O binário e exploit utilizados podem ser encontrado no meu github[8]
+  O binário e exploit utilizados podem ser encontrado no meu github[8].
 
 7) Contato
 
