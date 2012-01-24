@@ -40,7 +40,7 @@ m0nad@m0nad-notebook:~$
 
 ------------------------------------------------------------------------------------
 
-  As proteções do sistema operacional pode ser encontrada no wiki do ubuntu[5].
+  As proteções do sistema operacional podem ser encontrada no wiki do ubuntu[5].
   Podemos ver que o ASLR está ativo.
 
 ------------------------------------------------------------------------------------
@@ -85,7 +85,7 @@ m0nad@m0nad-notebook:~$ gcc -o vuln vuln.c -fno-stack-protector -static -Wall -W
 
 ------------------------------------------------------------------------------------
 
-m0nad@m0nad-notebook:~$ bash ../../checksec.sh --file vuln 
+m0nad@m0nad-notebook:~$ bash checksec.sh --file vuln 
 RELRO           STACK CANARY      NX            PIE             RPATH      RUNPATH      FILE
 Partial RELRO   No canary found   NX enabled    No PIE          No RPATH   No RUNPATH   vuln
 m0nad@m0nad-notebook:~$
@@ -168,10 +168,10 @@ m0nad@m0nad-notebook:~$
 
 ------------------------------------------------------------------------------------
 
-  Pronto, podemos usar o mov %edx,%eax | ret para controlar o eax, podemos então 
+  Pronto, podemos usar o mov %edx,%eax | ret para controlar o eax, precisamos 
 colocar o endereço de .data em algum registrador, e mover a string /bin//sh para 
-esta area de memoria, para isso precisamos de mov de algum registrador que 
-controlamos para alguma área de memoria:
+esta área de memoria, para isso precisamos de mov de algum registrador que 
+controlamos para uma área de memoria:
 
 ------------------------------------------------------------------------------------
 
@@ -209,7 +209,7 @@ m0nad@m0nad-notebook:~$
 
 ------------------------------------------------------------------------------------
 
-  Temos de sobra, bem, agora só precisamos de inc %eax, para colocarmos o valor 
+  Tem de sobra, bem, agora só precisamos de inc %eax, para colocarmos o valor 
 correto de execve: 
 
 ------------------------------------------------------------------------------------
@@ -230,7 +230,7 @@ m0nad@m0nad-notebook:~$
 
 ------------------------------------------------------------------------------------
 
-  Temos alguns, e é claro, precisamos de um int $0x80 para chamar o kernel para 
+  Encontramos! E é claro, precisamos de um int $0x80 para chamar o kernel para 
 executar a nossa syscall:
 
 ------------------------------------------------------------------------------------
@@ -271,7 +271,7 @@ $p .= pack("I", 0x080aa9a7); # mov %edx,%eax | ret
 $p .= pack("I", 0x08053eac); # pop %edx | ret
 $p .= pack("I", 0x080cf020); # @ .data
 $p .= pack("I", 0x08080391); # mov %eax,(%edx) | ret
-#data = /bin
+#.data = /bin
 
 ------------------------------------------------------------------------------------
 

