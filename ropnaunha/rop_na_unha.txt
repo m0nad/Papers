@@ -112,7 +112,7 @@ m0nad@m0nad-notebook:~$
 
   Precisamos então dos gadgets, para isso usei o objdump, com a opção -D para 
 'disassemblar', e o grep, para achar expressões regulares das instruções.
-Primeiros gadgets que procurei foi para controlar os registradores, um pop %ecx 
+  Primeiros gadgets que procurei foi para controlar os registradores, um pop %ecx 
 seguido de ret:
 
 ------------------------------------------------------------------------------------
