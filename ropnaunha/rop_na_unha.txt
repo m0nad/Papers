@@ -433,8 +433,8 @@ r00t!
 
 8) Referências
 
-[1] http://en.wikipedia.org/wiki/Executable_space_protection
-[2] http://cseweb.ucsd.edu/~hovav/talks/blackhat08.html
+[1] http://cseweb.ucsd.edu/~hovav/talks/blackhat08.html
+[2] http://en.wikipedia.org/wiki/Executable_space_protection
 [3] http://www.vnsecurity.net/2010/08/ropeme-rop-exploit-made-easy/
 [4] http://shell-storm.org/project/ROPgadget/
 [5] https://wiki.ubuntu.com/Security/Features
