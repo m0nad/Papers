@@ -304,7 +304,7 @@ $p .= pack("I", 0x08080391); # mov %eax,(%edx) | ret
 ------------------------------------------------------------------------------------
 
   Colocamos o endereço de data, ou seja da string /bin//sh em ebx, e ponteiro para 
-NULL que é .data + 8.
+NULL que é .data + 8 em ecx e edx.
 
 ------------------------------------------------------------------------------------
 
