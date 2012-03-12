@@ -112,7 +112,7 @@ m0nad@m0nad-notebook:~$
 
   Precisamos então dos gadgets, para isso usei o objdump, com a opção -D para 
 'disassemblar', e o grep, para achar expressões regulares das instruções.
-Primeiros gadgets que procurei foi para controlar os registradores, um pop %ecx 
+  Primeiros gadgets que procurei foi para controlar os registradores, um pop %ecx 
 seguido de ret:
 
 ------------------------------------------------------------------------------------
@@ -304,7 +304,7 @@ $p .= pack("I", 0x08080391); # mov %eax,(%edx) | ret
 ------------------------------------------------------------------------------------
 
   Colocamos o endereço de data, ou seja da string /bin//sh em ebx, e ponteiro para 
-NULL que é .data + 8.
+NULL que é .data + 8 em ecx e edx.
 
 ------------------------------------------------------------------------------------
 
@@ -433,8 +433,8 @@ r00t!
 
 8) Referências
 
-[1] http://en.wikipedia.org/wiki/Executable_space_protection
-[2] http://cseweb.ucsd.edu/~hovav/talks/blackhat08.html
+[1] http://cseweb.ucsd.edu/~hovav/talks/blackhat08.html
+[2] http://en.wikipedia.org/wiki/Executable_space_protection
 [3] http://www.vnsecurity.net/2010/08/ropeme-rop-exploit-made-easy/
 [4] http://shell-storm.org/project/ROPgadget/
 [5] https://wiki.ubuntu.com/Security/Features
